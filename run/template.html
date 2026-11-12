@@ -1,0 +1,254 @@
+<title>Spades Run</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Prototype: a solo roguelite run of Spades tables with rule-bending Edges.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one phone-width column. Lobby and ladder scroll; the table screen
+   is HUD + edge strip on top, burgundy felt in the middle, hand rail below. */
+:root{
+  --felt:#4a1a2c;
+  --felt-2:#2e0f1c;
+  --rail:#170910;
+  --line:rgba(244,226,232,.15);
+  --chip:#4b2433;
+  --ivory:#f3eee3;
+  --ink:#1b1f24;
+  --red:#c23b33;
+  --accent:#e6b24a;
+  --us:#e6b24a;
+  --text:#f6eef0;
+  --muted:#c3a7b1;
+  --danger:#ff8a72;
+  --good:#8fdcab;
+  --back:#1f3d4a;
+  --back-2:#2c5566;
+  --font-d:"Big Shoulders Display","Arial Narrow","Roboto Condensed",sans-serif;
+  --font-b:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+/*{{SHARED_CSS}}*/
+
+.eyebrow{margin:0;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{margin:4px 0 0;font-family:var(--font-d);font-weight:900;text-transform:uppercase;font-size:clamp(64px,22vw,112px);line-height:.82}
+.lede{margin:12px 0 0;font-size:17px;max-width:34ch}
+h2.sec{margin:0 0 10px;font-family:var(--font-d);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+.how{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.how li{display:flex;gap:10px;font-size:14px}
+.how li::before{content:"\2660";color:var(--accent);flex:none}
+.test{border-left:3px solid var(--accent);padding:2px 0 2px 14px}
+.test p{margin:0;font-size:14px;color:var(--muted)}
+.test p b{color:var(--text)}
+details.data{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+details.data summary{cursor:pointer;font-weight:700;font-size:14px}
+.stats{width:100%;border-collapse:collapse;margin:12px 0 10px;font-variant-numeric:tabular-nums;font-size:13px}
+.stats th,.stats td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+.stats th:first-child,.stats td:first-child{text-align:left;color:var(--muted)}
+.data .row .btn{height:40px;font-size:15px}
+.data .hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+.foot{font-size:12px;color:var(--muted);margin:0}
+#lobby,#ladder,#end{padding-block:28px 32px}
+.inner{display:flex;flex-direction:column;gap:22px}
+.best{font-size:14px;color:var(--muted);margin:0;text-align:center}
+.best b{color:var(--text)}
+
+/* The ladder: five tables, bottom rung first */
+.rungs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.rung{
+  display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:12px;
+  padding:12px 14px;border:1px solid var(--line);border-radius:14px;
+  background:color-mix(in srgb,var(--rail) 45%,transparent)
+}
+.rung .n{font-family:var(--font-d);font-size:28px;font-weight:900;line-height:1;color:var(--muted);text-align:center}
+.rung .nm{min-width:0}
+.rung .nm b{display:block;font-size:15px}
+.rung .nm span{display:block;font-size:12px;color:var(--muted)}
+.rung .tg{text-align:right;font-variant-numeric:tabular-nums}
+.rung .tg b{display:block;font-family:var(--font-d);font-size:26px;font-weight:800;line-height:1}
+.rung .tg span{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.rung.now{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.rung.now .n{color:var(--accent)}
+.rung.done{opacity:.72}
+.rung.done .n{color:var(--good)}
+.rung.boss .nm b{color:var(--accent)}
+.rung.locked{opacity:.55}
+.runbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.chipsleft{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.chipsleft i{width:16px;height:16px;border-radius:50%;border:2px dashed var(--accent);display:inline-block}
+.chipsleft i.used{border-color:color-mix(in srgb,var(--text) 22%,transparent);border-style:solid}
+.owned{display:flex;flex-wrap:wrap;gap:8px}
+.owned .edge-mini{
+  border:1px solid var(--accent);color:var(--text);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;
+  background:color-mix(in srgb,var(--accent) 12%,transparent)
+}
+.owned .none{font-size:13px;color:var(--muted)}
+
+/* HUD */
+.hudmain{display:flex;flex-direction:column;gap:5px;min-width:0}
+.hudmain .tname{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog{display:flex;align-items:center;gap:8px}
+.prog .bar{flex:1;height:8px;border-radius:8px;background:color-mix(in srgb,var(--text) 14%,transparent);overflow:hidden;min-width:60px}
+.prog .bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:8px;transition:width .4s ease}
+.prog .bar i.met{background:var(--good)}
+.prog b{font-family:var(--font-d);font-size:22px;font-weight:800;line-height:1;white-space:nowrap}
+.prog b span{color:var(--muted);font-size:16px}
+.meta{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;font-size:12px;color:var(--muted)}
+.meta b{font-family:var(--font-d);font-size:20px;color:var(--text);font-weight:800}
+.edgestrip{display:flex;gap:6px;overflow-x:auto;padding-block:6px;scrollbar-width:none;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--rail) 60%,transparent)}
+.edgestrip::-webkit-scrollbar{display:none}
+.edgestrip button{
+  flex:none;appearance:none;border:1px solid var(--accent);background:transparent;border-radius:999px;
+  padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer
+}
+.edgestrip .boss{border-color:var(--danger);color:var(--danger)}
+
+/* Edge picker */
+#pick{background:color-mix(in srgb,var(--rail) 92%,transparent);z-index:15;padding-block:24px}
+.pickgrid{display:flex;flex-direction:column;gap:12px}
+.edgecard{
+  appearance:none;text-align:left;cursor:pointer;display:grid;grid-template-columns:54px 1fr;gap:14px;align-items:center;
+  padding:16px;border-radius:16px;border:1px solid var(--line);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--felt) 70%,var(--rail)),var(--rail));
+  transition:border-color .15s,transform .15s
+}
+.edgecard:hover,.edgecard:focus-visible{border-color:var(--accent);transform:translateY(-2px)}
+.edgecard .glyph{
+  width:54px;height:72px;border-radius:8px;background:var(--ivory);color:var(--ink);display:grid;place-items:center;
+  font-size:30px;box-shadow:0 4px 10px rgba(0,0,0,.3)
+}
+.edgecard .glyph.red{color:var(--red)}
+.edgecard .ec{display:block;min-width:0;color:var(--text)}
+.edgecard .ec b{display:block;font-family:var(--font-d);font-size:24px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:var(--text)}
+.edgecard .ec i{display:block;font-style:normal;font-size:14px;color:var(--muted);margin-top:2px}
+.bigscore{font-family:var(--font-d);font-size:46px;font-weight:900;line-height:1;margin:6px 0 0;font-variant-numeric:tabular-nums}
+.bigscore span{color:var(--muted);font-size:24px}
+
+/* End */
+.result{font-family:var(--font-d);font-weight:900;text-transform:uppercase;font-size:clamp(56px,18vw,92px);line-height:.85;margin:4px 0 0}
+.result.win{color:var(--accent)}
+.feedback{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.feedback p{margin:0 0 10px;font-size:14px;font-weight:600}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{appearance:none;border:1px solid var(--line);background:transparent;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--accent);color:var(--rail);border-color:var(--accent)}
+</style>
+
+<div class="app" id="app">
+  <section class="screen scroll pad" id="lobby">
+    <div class="inner">
+      <div>
+        <p class="eyebrow">Prototype 02 &middot; card game lab</p>
+        <h1>Spades<br>Run</h1>
+        <p class="lede">Five tables, two hands each. Hit the target, pick an Edge that bends the rules, and climb.</p>
+      </div>
+      <ol class="rungs" id="lobbyRungs" aria-label="The five tables"></ol>
+      <button class="btn primary wide" id="startRun" type="button">Start a run</button>
+      <p class="best" id="bestLine">No runs yet on this device.</p>
+      <div>
+        <h2 class="sec">How it plays</h2>
+        <ul class="how">
+          <li>You and Nadia (north) play seven-card hands of team Spades against a new pair at each table.</li>
+          <li>Each table is two hands. Your team needs to reach that table's target score across both.</li>
+          <li>Clear a table and choose one of three Edges. Edges stack for the rest of the run.</li>
+          <li>Miss a target and you can spend one of two retry chips on a fresh deal. Out of chips, the run ends.</li>
+          <li>The fifth table is The House. No nil bids for your team, and a failed bid costs double.</li>
+        </ul>
+      </div>
+      <div class="test">
+        <h2 class="sec">What this tests</h2>
+        <p><b>Does a run structure with rule-bending upgrades give solo Spades players a reason to start another session?</b> Targets were tuned on 15,000 simulated tables so a solid player clears a full run about a third of the time.</p>
+      </div>
+      <details class="data" id="dataBox">
+        <summary>Playtest data on this device</summary>
+        <div id="statsHost"></div>
+        <div class="row">
+          <button class="btn ghost" type="button" id="copyData">Copy raw events</button>
+          <button class="btn ghost" type="button" id="resetData">Reset</button>
+        </div>
+        <p class="hint" id="dataHint">Runs, tables, Edge offers and picks, retries and early exits are logged here with timestamps.</p>
+      </details>
+      <p class="foot">Prototype by Muhammad Abdullah. Same rules engine as Spades Blitz; Edges are data flags the engine reads, so new ones take minutes to add.</p>
+    </div>
+  </section>
+
+  <section class="screen scroll pad" id="ladder" hidden>
+    <div class="inner">
+      <div>
+        <p class="eyebrow" id="ladderEyebrow">Your run</p>
+        <h2 class="result" id="ladderTitle" style="font-size:clamp(44px,14vw,72px)">Table 1</h2>
+      </div>
+      <div class="runbar">
+        <div class="chipsleft" id="chipsLeft"></div>
+        <button class="icon-btn" id="abandonRun" type="button">End run</button>
+      </div>
+      <ol class="rungs" id="runRungs"></ol>
+      <div>
+        <h2 class="sec">Your Edges</h2>
+        <div class="owned" id="owned"></div>
+      </div>
+      <button class="btn primary wide" id="sitDown" type="button">Sit down</button>
+    </div>
+  </section>
+
+  <section class="screen" id="game" hidden>
+    <header class="hud pad">
+      <button class="icon-btn" id="leave" type="button">Leave</button>
+      <div class="hudmain grow">
+        <span class="tname" id="tName">Table 1</span>
+        <div class="prog"><div class="bar"><i id="progBar"></i></div><b class="num" id="progTxt">0<span> / 40</span></b></div>
+      </div>
+      <div class="meta"><b id="handLbl" class="num">1/2</b><span>hand</span></div>
+    </header>
+    <div class="edgestrip pad" id="edgeStrip"></div>
+    <div id="tableHost" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+  </section>
+
+  <section class="screen scroll pad" id="pick" hidden>
+    <div class="inner">
+      <div>
+        <p class="eyebrow" id="pickEyebrow">Table cleared</p>
+        <p class="bigscore" id="pickScore">0</p>
+      </div>
+      <h2 class="sec" style="margin:0">Pick an Edge</h2>
+      <div class="pickgrid" id="pickGrid"></div>
+    </div>
+  </section>
+
+  <section class="screen scroll pad" id="end" hidden>
+    <div class="inner">
+      <div>
+        <p class="eyebrow" id="endEyebrow">Run over</p>
+        <p class="result" id="endResult">3 of 5</p>
+        <p class="lede" id="endLine"></p>
+      </div>
+      <ol class="rungs" id="endRungs"></ol>
+      <div>
+        <h2 class="sec">Edges this run</h2>
+        <div class="owned" id="endEdges"></div>
+      </div>
+      <div class="feedback">
+        <p>How hard did that run feel?</p>
+        <div class="chips" id="diffChips">
+          <button type="button" data-v="easy" aria-pressed="false">Too easy</button>
+          <button type="button" data-v="right" aria-pressed="false">About right</button>
+          <button type="button" data-v="hard" aria-pressed="false">Too hard</button>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="runAgain" type="button">Run again</button>
+        <button class="btn ghost" id="toLobby" type="button">Lobby</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/*{{ENGINE}}*/
+</script>
+<script>
+/*{{TABLE}}*/
+</script>
+<script>
+/*{{GAME}}*/
+</script>

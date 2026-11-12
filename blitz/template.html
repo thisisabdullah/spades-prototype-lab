@@ -1,0 +1,188 @@
+<title>Spades Blitz</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Prototype: a three-minute team Spades match with bots.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one phone-width column. Lobby scrolls; the match screen is a fixed
+   HUD band, a felt table that fills the middle, and a hand rail at the bottom. */
+:root{
+  --felt:#13463c;
+  --felt-2:#0c3029;
+  --rail:#0a1815;
+  --line:rgba(226,239,231,.15);
+  --chip:#24463f;
+  --ivory:#f3eee3;
+  --ink:#1b1f24;
+  --red:#c23b33;
+  --accent:#e6b24a;
+  --us:#e6b24a;
+  --text:#eef4ef;
+  --muted:#9fb6ad;
+  --danger:#f2775f;
+  --good:#86d9a6;
+  --back:#6d2723;
+  --back-2:#8a3a34;
+  --font-d:"Big Shoulders Display","Arial Narrow","Roboto Condensed",sans-serif;
+  --font-b:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+/*{{SHARED_CSS}}*/
+
+/* Lobby */
+#lobby{padding-block:28px 32px}
+#lobby .inner{display:flex;flex-direction:column;gap:22px}
+.eyebrow{margin:0;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{
+  margin:4px 0 0;font-family:var(--font-d);font-weight:900;text-transform:uppercase;
+  font-size:clamp(64px,22vw,112px);line-height:.82;letter-spacing:-.005em;
+}
+h1 .clock{color:var(--accent)}
+.lede{margin:12px 0 0;font-size:17px;max-width:34ch;color:var(--text)}
+.fan{position:relative;height:150px;margin:4px 0 0}
+.fan .card{position:absolute;left:50%;bottom:0;--cw:84px;transform-origin:50% 120%}
+.cta{display:flex;flex-direction:column;gap:10px}
+.link{
+  appearance:none;background:none;border:0;padding:6px 0;cursor:pointer;
+  color:var(--muted);font-size:14px;text-decoration:underline;text-underline-offset:3px;text-align:center
+}
+.link:hover{color:var(--text)}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fact{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.fact b{display:block;font-family:var(--font-d);font-size:30px;font-weight:800;line-height:1}
+.fact span{font-size:12px;color:var(--muted)}
+.how{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.how li{display:flex;gap:10px;font-size:14px;color:var(--text)}
+.how li::before{content:"\2660";color:var(--accent);flex:none}
+h2.sec{margin:0 0 10px;font-family:var(--font-d);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.03em}
+.test{border-left:3px solid var(--accent);padding:2px 0 2px 14px}
+.test p{margin:0;font-size:14px;color:var(--muted)}
+.test p b{color:var(--text)}
+details.data{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+details.data summary{cursor:pointer;font-weight:700;font-size:14px}
+.stats{width:100%;border-collapse:collapse;margin:12px 0 10px;font-variant-numeric:tabular-nums;font-size:13px}
+.stats th,.stats td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+.stats th:first-child,.stats td:first-child{text-align:left;color:var(--muted)}
+.stats thead th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.data .row .btn{height:40px;font-size:15px}
+.data .hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+.foot{font-size:12px;color:var(--muted);margin:0}
+
+/* HUD */
+.score{display:flex;align-items:center;gap:4px;min-width:0;font-variant-numeric:tabular-nums}
+.team{display:flex;align-items:baseline;gap:5px;padding:4px 8px;border-radius:10px;background:color-mix(in srgb,var(--text) 6%,transparent)}
+.team small{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.team b{font-family:var(--font-d);font-size:24px;font-weight:800;line-height:1}
+.team.us b{color:var(--us)}
+.team em{font-style:normal;font-size:11px;color:var(--muted)}
+.meta{display:flex;flex-direction:column;align-items:flex-end;line-height:1.15;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meta b{font-family:var(--font-d);font-size:20px;color:var(--text);font-weight:800}
+
+/* End */
+#end{padding-block:32px}
+#end .inner{display:flex;flex-direction:column;gap:18px}
+.result{font-family:var(--font-d);font-weight:900;text-transform:uppercase;font-size:clamp(56px,18vw,92px);line-height:.85;margin:4px 0 0}
+.result.win{color:var(--accent)}
+.final{font-family:var(--font-d);font-size:34px;font-weight:800;margin:0;font-variant-numeric:tabular-nums}
+.final span{color:var(--muted);font-size:18px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-left:8px}
+.feedback{border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.feedback p{margin:0 0 10px;font-size:14px;font-weight:600}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips button{
+  appearance:none;border:1px solid var(--line);background:transparent;border-radius:999px;
+  padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer
+}
+.chips button[aria-pressed="true"]{background:var(--accent);color:var(--rail);border-color:var(--accent)}
+</style>
+
+<div class="app" id="app">
+  <section class="screen scroll pad" id="lobby">
+    <div class="inner">
+      <div>
+        <p class="eyebrow">Prototype 01 &middot; card game lab</p>
+        <h1>Spades<br>Blitz <span class="clock">3:00</span></h1>
+        <p class="lede">Team Spades cut down to four hands of five tricks. A full match takes about three minutes.</p>
+      </div>
+      <div class="fan" id="fan" aria-hidden="true"></div>
+      <div class="cta">
+        <button class="btn primary wide" id="playBlitz" type="button">Play Blitz</button>
+        <button class="link" id="playControl" type="button">Or play the standard-length control: 13 tricks &times; 3 hands</button>
+      </div>
+      <div class="facts" aria-label="Match format">
+        <div class="fact"><b class="num">4</b><span>hands a match</span></div>
+        <div class="fact"><b class="num">5</b><span>tricks a hand</span></div>
+        <div class="fact"><b class="num">8s</b><span>to play a card</span></div>
+      </div>
+      <div>
+        <h2 class="sec">How it plays</h2>
+        <ul class="how">
+          <li>You and Sami (north) play against Lina and Omar. Bots fill every seat but yours.</li>
+          <li>Bid how many tricks you'll take. Nil means none, for &plusmn;50.</li>
+          <li>Follow suit if you can. Spades are trumps and can't be led until someone breaks them.</li>
+          <li>Make your team's bid for 10 a trick. Extra tricks are bags, and five bags cost 50.</li>
+          <li>After 8 seconds your lowest legal card plays itself. Highest score after four hands wins; a tie plays one sudden-death hand.</li>
+        </ul>
+      </div>
+      <div class="test">
+        <h2 class="sec">What this tests</h2>
+        <p><b>If a Spades match fits in three minutes, do more players hit Rematch?</b> The control arm plays the standard 13-trick hand so the two can be compared on the same device.</p>
+      </div>
+      <details class="data" id="dataBox">
+        <summary>Playtest data on this device</summary>
+        <div id="statsHost"></div>
+        <div class="row">
+          <button class="btn ghost" type="button" id="copyData">Copy raw events</button>
+          <button class="btn ghost" type="button" id="resetData">Reset</button>
+        </div>
+        <p class="hint" id="dataHint">Every bid, card, auto-play, rematch and early exit is logged here with a timestamp.</p>
+      </details>
+      <p class="foot">Prototype by Muhammad Abdullah. Built with AI coding agents on a shared rules engine; all game logic runs on a redacted per-seat view, so it can move to an authoritative server unchanged.</p>
+    </div>
+  </section>
+
+  <section class="screen" id="game" hidden>
+    <header class="hud pad">
+      <button class="icon-btn" id="leave" type="button">Leave</button>
+      <div class="score grow">
+        <span class="team us"><small>Us</small><b id="sUs" class="num">0</b><span class="pips" id="bUs"></span></span>
+        <span class="team"><small>Them</small><b id="sThem" class="num">0</b><span class="pips" id="bThem"></span></span>
+      </div>
+      <div class="meta"><b id="clock" class="num">0:00</b><span id="handLbl">Hand 1 of 4</span></div>
+    </header>
+    <div id="tableHost" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>
+  </section>
+
+  <section class="screen scroll pad" id="end" hidden>
+    <div class="inner">
+      <div>
+        <p class="eyebrow" id="endEyebrow">Match over</p>
+        <p class="result" id="endResult">You win</p>
+        <p class="final num" id="endScore">0 &ndash; 0</p>
+      </div>
+      <div id="endTable"></div>
+      <div class="feedback">
+        <p>How did that length feel?</p>
+        <div class="chips" id="lenChips">
+          <button type="button" data-v="short" aria-pressed="false">Too short</button>
+          <button type="button" data-v="right" aria-pressed="false">About right</button>
+          <button type="button" data-v="long" aria-pressed="false">Too long</button>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="rematch" type="button">Rematch</button>
+        <button class="btn ghost" id="toLobby" type="button">Lobby</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/*{{ENGINE}}*/
+</script>
+<script>
+/*{{TABLE}}*/
+</script>
+<script>
+/*{{GAME}}*/
+</script>
